@@ -16,6 +16,7 @@ parser.add_option('-r', type='string', dest='redfile', help='path to red CSV fil
 parser.add_option('-R', type='string', dest='percent_red', help='percentage of red cells in experiment')
 parser.add_option('-G', type='string', dest='percent_green', help='percentage of green cells in experiment')
 parser.add_option('-N', type='string', dest='n', help='number of bins')
+parser.add_option('-t', type='string', dest='timeint', help='time interval between frames, in minutes')
 
 (options, args) = parser.parse_args()
 error = 0
@@ -36,6 +37,7 @@ except KeyError:
 n = int(options.n) #number of bins
 percent_red = float(options.percent_red)
 percent_green = float(options.percent_green)
+timeint = float(options.timeint)
 
 # Build directory to contain outputs
 experiment_index = options.greenfile.find('EXP') 
@@ -146,23 +148,24 @@ def make_figure(arr, kind, ax):
 	for b, i in zip((np.array(range(n)) + 1), color_idx):
 		means = df[df['Bin'] == float(b)]['Mean'].values
 		stds = df[df['Bin'] == float(b)]['StDev'].values
-		frames = df[df['Bin'] == float(b)]['Frame'].values
+		frames = df[df['Bin'] == float(b)]['Frame'].values * timeint / 60.0
 		ax.errorbar(frames, means, yerr=stds, fmt='none', alpha=1.0, ecolor=plt.cm.gist_rainbow(i))
 
 	for b, i in zip((np.array(range(n)) + 1), color_idx):
 		means = df[df['Bin'] == float(b)]['Mean'].values
-		frames = df[df['Bin'] == float(b)]['Frame'].values
+		frames = df[df['Bin'] == float(b)]['Frame'].values * timeint / 60.0
 		ax.scatter(frames, means, s=10, label=('bin ' + str(int(b))), color=plt.cm.gist_rainbow(i))
 
 	ax.set_xlabel('frame', fontsize='x-large')
 	ax.set_ylabel('mean neighbours per cell', fontsize='x-large')
 	ax.tick_params(axis='both', labelsize='x-large')
+	ax.xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 	ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-	ax.set_xlim(-20,max_time+20)
+	ax.set_xlim(-1,(max_time * timeint / 60.0 + 1))
 	if ax == ax2:
 		ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize='x-large', ncol=1)
 
-fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=False, sharey=False, figsize=(16,12))
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=False, sharey=True, figsize=(16,12))
 make_figure(alltimes_gg, 'gg', ax1)
 make_figure(alltimes_gr, 'gr', ax2)
 make_figure(alltimes_rr, 'rr', ax3)
